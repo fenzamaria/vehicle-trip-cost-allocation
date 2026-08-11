@@ -74,13 +74,13 @@ erDiagram
         string fuel_id PK
         string vehicle_id FK
         datetime timestamp
-        float amount
+        decimal amount
     }
     TOLL_TRANSACTION {
         string toll_id PK
         string vehicle_id FK
         datetime timestamp
-        float amount
+        decimal amount
     }
     DRIVER {
         string driver_id PK
@@ -92,14 +92,14 @@ erDiagram
         string vehicle_id FK "nullable"
         string trip_id FK "nullable"
         date expense_date
-        float amount
+        decimal amount
     }
     ALLOCATION {
         string allocation_id PK
         string run_id FK
         string source_type
         string source_id
-        float amount
+        decimal amount
         string attribution_level "TRIP / VEHICLE / UNATTRIBUTED"
         string trip_id FK "nullable"
         string vehicle_id FK "nullable"
@@ -112,6 +112,11 @@ erDiagram
 ```
 
 **Key relationships:**
+- **Monetary fields use `decimal`, not `float`.** `float` uses binary
+  floating-point representation, which introduces small rounding errors (e.g.,
+  `0.1 + 0.2` doesn't exactly equal `0.3`) — unacceptable for a system whose entire
+  purpose is an exact conservation invariant. `decimal` represents money precisely,
+  avoiding accumulated rounding drift across many allocation records.
 - A `Vehicle` has many `Trips`, `Fuel Purchases`, and `Toll Transactions` — the
   natural one-to-many link that most allocation resolves through.
 - `Driver` to `Vehicle` is many-to-many, resolved **per date** (a driver may be
@@ -128,8 +133,8 @@ stateDiagram-v2
     [*] --> Ingested: Load 4 source tables
     Ingested --> Processing: run_allocation() starts
     Processing --> TripMatch: Try TRIP-level match
-    TripMatch --> Attributed_Trip: Confident match found
-    TripMatch --> VehicleMatch: No confident trip match
+    TripMatch --> Attributed_Trip: Exactly 1 trip matches (within tolerance)
+    TripMatch --> VehicleMatch: 0 matches (gap) OR 2+ matches (ambiguous)
     VehicleMatch --> Attributed_Vehicle: Vehicle known
     VehicleMatch --> Unattributed: Vehicle not resolvable
     Attributed_Trip --> Recorded

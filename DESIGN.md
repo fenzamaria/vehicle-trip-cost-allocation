@@ -79,10 +79,18 @@ supports.
 ### Toll Transactions → TRIP level (with a bounded tolerance), else VEHICLE level
 **Rationale:** a toll timestamp is a strong, specific temporal signal — if it falls
 within `[trip.start_time, trip.end_time]` (extended by a small, explicitly documented
-tolerance for timing drift), attributing it to that trip is well-justified. If it
-falls in a genuine gap between two trips for the same vehicle, we do **not** guess
-which of the two trips it belongs to — we fall back to VEHICLE level. We never split
-a toll between two candidate trips.
+tolerance for timing drift), attributing it to that trip is well-justified.
+
+**Two distinct fallback cases, both resolved the same way — VEHICLE level:**
+1. **Gap case:** the timestamp falls in a genuine gap between two trips (outside
+   both windows, even with tolerance applied) — no trip claims it at all.
+2. **Ambiguous overlap case:** the timestamp falls within the tolerance window of
+   **two different trips simultaneously** (e.g., trip A ends at 2:00pm, trip B
+   starts at 2:03pm, and the toll is logged at 2:02pm — within the 5-minute
+   tolerance of both). A match count of exactly 1 is required for a confident TRIP
+   attribution; a match count of 0 *or* 2+ both fall back to VEHICLE level. We never
+   arbitrarily pick one of two equally-plausible trips, and we never split the toll
+   between them — a coin-flip guess is not a confident attribution.
 
 ### Driver-Reported Expenses → TRIP level (only if explicit trip_id given), else
 VEHICLE level (if vehicle/date resolvable), else UNATTRIBUTED
@@ -103,8 +111,16 @@ in `cost-per-vehicle`, just absent from any specific `cost-per-trip`.
 ## 4. The Conservation Invariant
 
 **Invariant:** `SUM(all TRIP-level allocations) + SUM(all VEHICLE-level allocations)
-+ SUM(unattributed pool) == SUM(total recorded spend across all four sources)`,
-exactly, per allocation run.
++ SUM(unattributed pool) == SUM(total recorded spend across the three cost-bearing
+sources: fuel purchases, toll transactions, driver-reported expenses)`, exactly,
+per allocation run.
+
+**Note on Trip Logs:** trip logs are **reference/anchor data, not a cost source** —
+they carry no monetary `amount` field and contribute nothing to "total recorded
+spend." Their role is purely to define the trip windows (`start_time`, `end_time`,
+`vehicle_id`) that the allocation engine matches the three real cost sources
+against. The conservation invariant is therefore checked only across the three
+cost-bearing tables, not all four.
 
 **How it's asserted:**
 - Every source record is allocated **exactly once** per run — the allocation engine
@@ -112,7 +128,8 @@ exactly, per allocation run.
   destination (a trip, a vehicle, or the unattributed pool), never zero, never more
   than one.
 - After each run, a reconciliation check sums all `Allocations` rows for that
-  `run_id` and compares it against the sum of all four source tables' amounts. This
+  `run_id` and compares it against the sum of the three cost-bearing source
+  tables' amounts (trip logs excluded, per the note above). This
   is implemented as an automated test (`test_conservation_invariant`), not just a
   manual spot-check — it runs against the seed data on every test execution and
   fails loudly if the totals diverge by even a rounding unit.

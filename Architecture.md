@@ -167,27 +167,31 @@ exactly, the run is treated as failed, not silently accepted.
   unattributed" side) — it's the one component that reads across both sides of the
   invariant to assert they match.
 
-## 6. Security
+## 6. Security (Planned, Not Yet Implemented)
 
-The problem brief itself doesn't specify a user model — but since this API exposes
-real financial data (cost-per-trip, cost-per-vehicle), leaving it fully open isn't
-realistic. A minimal, justified security layer is included:
+The problem brief itself doesn't specify a user model, so this isn't a gap against
+the actual requirements — but since the API exposes real financial data
+(cost-per-trip, cost-per-vehicle), a security layer is worth designing even if
+building it was deprioritized given the time available. The planned approach:
 
 - **Role-based access:** two roles — `Admin` (can trigger allocation runs, ingest
   data) and `Viewer` (read-only access to cost/unattributed-pool queries). This is
   the smallest access model that meaningfully separates "who can change the data"
   from "who can only read it."
-- **Password hashing:** passwords are hashed with bcrypt before storage — never
-  stored in plaintext, and not reversible even by the system itself.
-- **JWT-based sessions:** on login, a signed JWT is issued containing the user's ID
-  and role; protected endpoints verify this token rather than maintaining server-side
-  session state (consistent with REST's stateless principle).
-- **Secrets management:** the JWT signing key and any other secrets live in a `.env`
-  file (excluded from version control via `.gitignore`), never hardcoded in source.
+- **Password hashing:** passwords hashed with bcrypt before storage — never stored
+  in plaintext, and not reversible even by the system itself.
+- **JWT-based sessions:** on login, a signed JWT would be issued containing the
+  user's ID and role; protected endpoints would verify this token rather than
+  maintaining server-side session state (consistent with REST's stateless
+  principle).
+- **Secrets management:** the JWT signing key and any other secrets live in a
+  `.env` file (excluded from version control via `.gitignore`), never hardcoded in
+  source — this part IS in place regardless of auth being deferred, since secrets
+  hygiene costs nothing to do from the start.
 
-This is intentionally lightweight — no signup flow, password reset, or account
-management beyond what's needed to demonstrate the access-control pattern, since
-building those out further isn't related to the core allocation problem being tested.
+This was deliberately deprioritized in favor of ensuring the core allocation
+engine, query API, and test coverage were fully correct and verified first — see
+Future Improvements.
 
 ## 7. Agentic / AI-Assisted Development Workflow
 

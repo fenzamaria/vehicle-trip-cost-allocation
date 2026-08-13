@@ -52,10 +52,10 @@ cd vehicle-trip-cost-allocation
 
 # 2. Create a virtual environment and install dependencies
 python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
+source venv/bin/activate        # Windows: venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 
-# 3. Set up environment secrets (JWT signing key, etc.)
+# 3. Set up environment secrets
 cp .env.example .env            # then fill in values
 
 # 4. Ingest the four source files into the database
@@ -63,18 +63,15 @@ python ingest.py --data-dir ./data/seed
 # (swap --data-dir to point at any other folder matching the schemas
 #  in schemas/ to test against different data)
 
-# 5. Run the allocation engine
-python run_allocation.py
+# 5. Run the test suite (includes the conservation-invariant assertion)
+pytest tests/ -v
 
-# 6. Run the test suite (includes the conservation-invariant assertion)
-pytest
-
-# 7. Start the API server
+# 6. Start the API server
 uvicorn app.main:app --reload
 
-# 8. API available at http://localhost:8000/docs (interactive Swagger UI)
-#    Log in with a seeded Admin or Viewer account (see data/seed/users.json)
-#    to obtain a token for protected endpoints.
+# 7. API available at http://localhost:8000/docs (interactive Swagger UI).
+#    Trigger POST /allocations/run first, then try the GET endpoints
+#    (cost-per-trip, cost-per-vehicle, unattributed, reconciliation).
 ```
 
 ## Scope Limits (Intentionally Left Out, and Why)
@@ -86,12 +83,13 @@ uvicorn app.main:app --reload
   — a plausible-looking number that isn't actually justified. Flagged as a genuine,
   reasoned trade-off in `DESIGN.md`, not an oversight.
 - **No multi-currency handling** — all costs assumed to be in a single currency.
-- **Authentication is intentionally minimal (role-based, not full account
-  management)** — the problem brief itself doesn't specify a user model, but since
-  the API exposes real financial data (cost-per-vehicle, cost-per-trip), I added a
-  lightweight Admin/Viewer role distinction rather than leaving the API fully open.
-  Full account management (signup flows, password reset, etc.) is out of scope as
-  unrelated to the core allocation problem.
+- **Authentication is deferred, not implemented in this submission** — the
+  problem brief itself doesn't specify a user model, and the API exposing
+  financial data was the main justification for adding it. Given limited time,
+  priority was placed on the core allocation-policy correctness, the query API,
+  and test coverage — all of which are fully implemented and verified. A
+  role-based (Admin/Viewer) auth layer, as sketched in Architecture.md Section 6,
+  remains a clearly-scoped next step, not a design gap.
 
 ## Data Simulation
 

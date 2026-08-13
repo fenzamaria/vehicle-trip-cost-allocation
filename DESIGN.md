@@ -166,9 +166,16 @@ that `cost-per-trip` is sometimes incomplete by design, with the gap visible and
 explained (at VEHICLE level or in the unattributed pool) rather than hidden inside
 a falsely precise trip-level figure.
 
-## 7. Known Trade-offs
+## 8. Future Improvements
 
+- **Role-based authentication** (Admin/Viewer) was designed (see Architecture.md
+  Section 6) but not implemented — deprioritized in favor of ensuring the core
+  allocation engine, query API, and full test coverage were correct and verified
+  first. This is the top priority if development continues.
 - Distance-proportional fuel splitting within a fill period was considered and
   rejected — see README scope limits for the full reasoning.
 - Toll tolerance window (5 min) is a fixed constant, not currently configurable
   per data source — flagged as a future improvement.
+- A driver-to-vehicle date-based assignment lookup (sketched in the ER diagram)
+  isn't implemented — the current `UNMAPPED_DRIVER` fallback is a simplification
+  that could be sharpened with real assignment data.

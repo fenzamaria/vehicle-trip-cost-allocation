@@ -9,7 +9,14 @@ All queries operate against the LATEST allocation run by default —
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from app.models import Allocation, AllocationRun
+from app.models import Allocation, AllocationRun, Trip, Vehicle
+
+
+class NotFoundError(Exception):
+    """Raised when a requested trip_id or vehicle_id doesn't exist at all —
+    distinct from a valid result of zero cost. See API.md's documented
+    fix for the previously-flagged 404-vs-zero-cost ambiguity."""
+    pass
 
 
 def get_latest_run_id(db: Session) -> str | None:
@@ -23,7 +30,13 @@ def get_cost_for_trip(db: Session, trip_id: str, run_id: str | None = None) -> d
     it. Deliberately does NOT include VEHICLE-level costs, even ones for
     the same vehicle — see DESIGN.md Section 2: a vehicle's total cost is
     allowed to exceed the sum of its trips' costs, by design.
+
+    Raises NotFoundError if trip_id doesn't exist in the Trip table at
+    all — distinct from a real trip that simply has zero attributed cost.
     """
+    if db.query(Trip).filter(Trip.trip_id == trip_id).first() is None:
+        raise NotFoundError(f"Trip '{trip_id}' does not exist")
+
     run_id = run_id or get_latest_run_id(db)
     total = (
         db.query(func.coalesce(func.sum(Allocation.amount), 0))
@@ -43,7 +56,13 @@ def get_cost_for_vehicle(db: Session, vehicle_id: str, run_id: str | None = None
     allocations for that vehicle — a vehicle's cost includes everything
     confidently tied to it, whether or not it was narrowed down to a
     specific trip. See DESIGN.md Section 2.
+
+    Raises NotFoundError if vehicle_id doesn't exist in the Vehicle table
+    at all — distinct from a real vehicle with zero attributed cost.
     """
+    if db.query(Vehicle).filter(Vehicle.vehicle_id == vehicle_id).first() is None:
+        raise NotFoundError(f"Vehicle '{vehicle_id}' does not exist")
+
     run_id = run_id or get_latest_run_id(db)
     total = (
         db.query(func.coalesce(func.sum(Allocation.amount), 0))

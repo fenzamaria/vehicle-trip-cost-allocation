@@ -3,7 +3,7 @@ API Routes — deliberately thin (per Architecture.md Section 1): each
 route just validates the request, calls the right service, and shapes
 the response. No business logic lives here.
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -22,12 +22,18 @@ def trigger_allocation_run(db: Session = Depends(get_db)):
 
 @router.get("/costs/trip/{trip_id}")
 def cost_per_trip(trip_id: str, db: Session = Depends(get_db)):
-    return query_service.get_cost_for_trip(db, trip_id)
+    try:
+        return query_service.get_cost_for_trip(db, trip_id)
+    except query_service.NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.get("/costs/vehicle/{vehicle_id}")
 def cost_per_vehicle(vehicle_id: str, db: Session = Depends(get_db)):
-    return query_service.get_cost_for_vehicle(db, vehicle_id)
+    try:
+        return query_service.get_cost_for_vehicle(db, vehicle_id)
+    except query_service.NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.get("/unattributed")

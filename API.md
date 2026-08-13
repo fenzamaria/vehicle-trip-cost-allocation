@@ -39,7 +39,8 @@ to *that specific trip*, not everything the vehicle incurred).
 |---|---|---|
 | `trip_id` | string | The trip's identifier, e.g. `T1` |
 
-**Response `200 OK`:**
+**Response `200 OK`** (trip exists — including trips with zero attributed cost,
+which is a valid, meaningful result, not an error):
 ```json
 {
   "trip_id": "T1",
@@ -47,8 +48,14 @@ to *that specific trip*, not everything the vehicle incurred).
   "total_cost": 240.00
 }
 ```
-A trip with no TRIP-level allocations returns `"total_cost": 0` (not an error —
-zero attributed cost is a valid, meaningful result, not a failure state).
+
+**Response `404 Not Found`** (trip_id doesn't exist in the Trip table at all —
+distinguished from the valid zero-cost case above):
+```json
+{
+  "detail": "Trip 'T_FAKE' does not exist"
+}
+```
 
 ---
 
@@ -70,6 +77,13 @@ DESIGN.md Section 2).
   "vehicle_id": "V1",
   "run_id": "a5786c78-ad10-4ea9-966a-fd6bd99d18ee",
   "total_cost": 5575.00
+}
+```
+
+**Response `404 Not Found`** (vehicle_id doesn't exist at all):
+```json
+{
+  "detail": "Vehicle 'V_FAKE' does not exist"
 }
 ```
 
@@ -129,7 +143,8 @@ total recorded spend across the three cost-bearing sources.
 
 | Status | When |
 |---|---|
-| `404 Not Found` | (Not currently distinguished from a valid zero-cost result — see Future Improvements: trip/vehicle IDs that don't exist at all currently return `total_cost: 0` rather than a 404, since the query doesn't check existence separately from summing. Flagged as a known simplification.) |
+| `404 Not Found` | `trip_id` or `vehicle_id` in the URL path doesn't exist in the database at all — distinguished from a valid `200` response with `total_cost: 0` for a real trip/vehicle that simply has no attributed cost |
+| `422 Unprocessable Entity` | Request validation failure (FastAPI's automatic Pydantic validation) |
 | `500 Internal Server Error` | Unexpected server-side failure (e.g., database connectivity issue) |
 
 ## Data Types

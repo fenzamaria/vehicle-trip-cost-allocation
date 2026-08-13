@@ -1,0 +1,26 @@
+[
+  {
+    "toll_id": "TL1",
+    "vehicle_id": "V1",
+    "timestamp": "2026-01-01T08:30:00",
+    "amount": 90.00
+  },
+  {
+    "toll_id": "TL2",
+    "vehicle_id": "V1",
+    "timestamp": "2026-01-01T09:02:00",
+    "amount": 60.00
+  },
+  {
+    "toll_id": "TL3",
+    "vehicle_id": "V1",
+    "timestamp": "2026-01-01T13:00:00",
+    "amount": 75.00
+  },
+  {
+    "toll_id": "TL4",
+    "vehicle_id": "V9",
+    "timestamp": "2026-01-01T08:15:00",
+    "amount": 50.00
+  }
+]

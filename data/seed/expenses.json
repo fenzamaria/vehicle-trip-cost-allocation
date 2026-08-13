@@ -1,0 +1,26 @@
+[
+  {
+    "expense_id": "DE1",
+    "driver_id": "D1",
+    "vehicle_id": "V1",
+    "trip_id": "T1",
+    "expense_date": "2026-01-01",
+    "amount": 150.00
+  },
+  {
+    "expense_id": "DE2",
+    "driver_id": "D1",
+    "vehicle_id": "V1",
+    "trip_id": null,
+    "expense_date": "2026-01-01",
+    "amount": 200.00
+  },
+  {
+    "expense_id": "DE3",
+    "driver_id": "D2",
+    "vehicle_id": null,
+    "trip_id": null,
+    "expense_date": "2026-01-03",
+    "amount": 120.00
+  }
+]

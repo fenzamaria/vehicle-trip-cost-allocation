@@ -1,0 +1,20 @@
+[
+  {
+    "fuel_id": "F1",
+    "vehicle_id": "V1",
+    "timestamp": "2026-01-01T07:30:00",
+    "amount": 3200.00
+  },
+  {
+    "fuel_id": "F2",
+    "vehicle_id": "V1",
+    "timestamp": "2026-01-02T07:30:00",
+    "amount": 1800.00
+  },
+  {
+    "fuel_id": "F3",
+    "vehicle_id": "V2",
+    "timestamp": "2026-01-05T10:00:00",
+    "amount": 2100.00
+  }
+]

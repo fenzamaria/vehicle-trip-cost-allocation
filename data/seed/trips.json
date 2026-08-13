@@ -1,0 +1,23 @@
+[
+  {
+    "trip_id": "T1",
+    "vehicle_id": "V1",
+    "start_time": "2026-01-01T08:00:00",
+    "end_time": "2026-01-01T09:00:00",
+    "distance_km": 45.0
+  },
+  {
+    "trip_id": "T2",
+    "vehicle_id": "V1",
+    "start_time": "2026-01-01T09:05:00",
+    "end_time": "2026-01-01T10:00:00",
+    "distance_km": 30.0
+  },
+  {
+    "trip_id": "T3",
+    "vehicle_id": "V1",
+    "start_time": "2026-01-02T08:00:00",
+    "end_time": "2026-01-02T09:00:00",
+    "distance_km": 50.0
+  }
+]

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Vehicle Trip Cost Allocation</title>
+<style>
+  :root {
+    --bg: #14171A;
+    --panel: #1E2226;
+    --panel-border: #2B3036;
+    --text: #E8EAED;
+    --muted: #8B9198;
+    --amber: #F5A623;
+    --green: #3DDC84;
+    --alert: #FF6B4A;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Consolas, monospace;
+    --sans: -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    padding: 32px 24px 80px;
+  }
+
+  .wrap { max-width: 960px; margin: 0 auto; }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 1px solid var(--panel-border);
+    padding-bottom: 20px;
+    margin-bottom: 28px;
+  }
+
+  h1 {
+    font-size: 1.4rem;
+    letter-spacing: 0.02em;
+    margin: 0 0 4px;
+    font-weight: 600;
+  }
+  h1 .tag {
+    color: var(--muted);
+    font-weight: 400;
+    font-size: 0.85rem;
+    display: block;
+    margin-top: 4px;
+  }
+
+  button {
+    background: var(--amber);
+    color: #14171A;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    letter-spacing: 0.01em;
+  }
+  button:hover { filter: brightness(1.08); }
+  button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .run-meta {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 6px;
+    text-align: right;
+  }
+
+  /* --- Reconciliation ledger strip: the signature element --- */
+  .ledger {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 6px;
+    padding: 20px 24px;
+    margin-bottom: 28px;
+    font-family: var(--mono);
+  }
+  .ledger-title {
+    font-family: var(--sans);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+  .ledger-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 6px 0;
+    font-size: 1rem;
+  }
+  .ledger-row .label { color: var(--muted); font-size: 0.85rem; }
+  .ledger-row.attributed .value { color: var(--green); }
+  .ledger-row.unattributed .value { color: var(--alert); }
+  .ledger-divider {
+    border: none;
+    border-top: 1px dashed var(--panel-border);
+    margin: 10px 0;
+  }
+  .ledger-row.total {
+    font-size: 1.25rem;
+    font-weight: 700;
+    padding-top: 10px;
+  }
+  .ledger-equation {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 10px;
+    letter-spacing: 0.02em;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 700px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 6px;
+    padding: 18px 20px;
+  }
+  .panel h2 {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin: 0 0 14px;
+    font-weight: 600;
+  }
+
+  .lookup-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--panel-border);
+    color: var(--text);
+    padding: 8px 10px;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+  }
+  input:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
+  .lookup-row button { padding: 8px 14px; }
+
+  .result {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--text);
+    min-height: 20px;
+  }
+  .result .err { color: var(--alert); }
+
+  table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 0.8rem; }
+  th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--panel-border); }
+  th { color: var(--muted); font-weight: 500; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  td.amount { color: var(--alert); text-align: right; }
+  .empty-state { color: var(--muted); font-size: 0.82rem; padding: 8px 0; }
+
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.72rem;
+    margin-top: 40px;
+    font-family: var(--mono);
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Vehicle Trip Cost Allocation
+          <span class="tag">TRIP &rarr; VEHICLE &rarr; UNATTRIBUTED &mdash; never guessed, only earned</span>
+        </h1>
+      </div>
+      <div>
+        <button id="runBtn">Run Allocation</button>
+        <div class="run-meta" id="runMeta">no run yet</div>
+      </div>
+    </header>
+
+    <div class="ledger">
+      <div class="ledger-title">Reconciliation — Latest Run</div>
+      <div class="ledger-row attributed">
+        <span class="label">Attributed (TRIP + VEHICLE)</span>
+        <span class="value" id="attributedTotal">&mdash;</span>
+      </div>
+      <div class="ledger-row unattributed">
+        <span class="label">Unattributed pool</span>
+        <span class="value" id="unattributedTotal">&mdash;</span>
+      </div>
+      <hr class="ledger-divider">
+      <div class="ledger-row total">
+        <span class="label">Grand total</span>
+        <span class="value" id="grandTotal">&mdash;</span>
+      </div>
+      <div class="ledger-equation">attributed + unattributed = total recorded spend, exactly &mdash; never invented, duplicated, or discarded</div>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <h2>Cost per Trip</h2>
+        <div class="lookup-row">
+          <input id="tripInput" placeholder="trip id, e.g. T1">
+          <button onclick="lookupTrip()">Look up</button>
+        </div>
+        <div class="result" id="tripResult"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Cost per Vehicle</h2>
+        <div class="lookup-row">
+          <input id="vehicleInput" placeholder="vehicle id, e.g. V1">
+          <button onclick="lookupVehicle()">Look up</button>
+        </div>
+        <div class="result" id="vehicleResult"></div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:20px;">
+      <h2>Unattributed Pool</h2>
+      <div id="unattributedTable"></div>
+    </div>
+
+    <footer>Vehicle Trip Cost Allocation &middot; local demo interface &middot; see /docs for the full API</footer>
+  </div>
+
+<script>
+  const money = (n) => `Rs ${Number(n).toFixed(2)}`;
+
+  async function runAllocation() {
+    const btn = document.getElementById('runBtn');
+    btn.disabled = true;
+    btn.textContent = 'Running...';
+    try {
+      const res = await fetch('/allocations/run', { method: 'POST' });
+      const data = await res.json();
+      document.getElementById('runMeta').textContent = `run ${data.run_id.slice(0,8)}... completed`;
+      await refreshReconciliation();
+      await refreshUnattributed();
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Run Allocation';
+    }
+  }
+
+  async function refreshReconciliation() {
+    const res = await fetch('/reconciliation');
+    const data = await res.json();
+    document.getElementById('attributedTotal').textContent = money(data.attributed_total);
+    document.getElementById('unattributedTotal').textContent = money(data.unattributed_total);
+    document.getElementById('grandTotal').textContent = money(data.grand_total);
+  }
+
+  async function refreshUnattributed() {
+    const res = await fetch('/unattributed');
+    const data = await res.json();
+    const el = document.getElementById('unattributedTable');
+    if (data.length === 0) {
+      el.innerHTML = '<div class="empty-state">Nothing unattributed for this run.</div>';
+      return;
+    }
+    let rows = data.map(r => `
+      <tr>
+        <td>${r.source_type}</td>
+        <td>${r.source_id}</td>
+        <td class="amount">${money(r.amount)}</td>
+        <td>${r.reason_code}</td>
+      </tr>`).join('');
+    el.innerHTML = `<table>
+      <tr><th>Source</th><th>ID</th><th>Amount</th><th>Reason</th></tr>
+      ${rows}
+    </table>`;
+  }
+
+  async function lookupTrip() {
+    const id = document.getElementById('tripInput').value.trim();
+    const el = document.getElementById('tripResult');
+    if (!id) return;
+    const res = await fetch(`/costs/trip/${id}`);
+    const data = await res.json();
+    el.innerHTML = res.ok
+      ? `<span>${data.trip_id}: <strong>${money(data.total_cost)}</strong></span>`
+      : `<span class="err">${data.detail}</span>`;
+  }
+
+  async function lookupVehicle() {
+    const id = document.getElementById('vehicleInput').value.trim();
+    const el = document.getElementById('vehicleResult');
+    if (!id) return;
+    const res = await fetch(`/costs/vehicle/${id}`);
+    const data = await res.json();
+    el.innerHTML = res.ok
+      ? `<span>${data.vehicle_id}: <strong>${money(data.total_cost)}</strong></span>`
+      : `<span class="err">${data.detail}</span>`;
+  }
+
+  document.getElementById('runBtn').addEventListener('click', runAllocation);
+
+  // Load whatever the latest run already has, on page load.
+  refreshReconciliation().catch(() => {});
+  refreshUnattributed().catch(() => {});
+</script>
+</body>
+</html>

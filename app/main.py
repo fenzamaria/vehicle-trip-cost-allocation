@@ -3,6 +3,7 @@ Main FastAPI application entry point.
 Run with: uvicorn app.main:app --reload
 """
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from app.database import Base, engine
 from app.routes.allocation_routes import router as allocation_router
@@ -20,8 +21,13 @@ app = FastAPI(
 )
 
 app.include_router(allocation_router)
+app.mount("/ui", StaticFiles(directory="app/static", html=True), name="ui")
 
 
 @app.get("/")
 def root():
-    return {"message": "Vehicle Trip Cost Allocation API. See /docs for the interactive API explorer."}
+    return {
+        "message": "Vehicle Trip Cost Allocation API.",
+        "api_docs": "/docs",
+        "dashboard": "/ui",
+    }
